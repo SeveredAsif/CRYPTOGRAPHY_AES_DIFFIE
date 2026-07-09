@@ -1,6 +1,7 @@
 #target is, giving a plaintext and key and get the encrypted text after 10 rounds. implement a key generator module 
 from aes_helpers import Sbox, InvSbox, Rcon, Mixer, InvMixer, gf_mult 
 import random 
+import time 
 
 
 class Solution:
@@ -14,7 +15,12 @@ class KeyScheduler:
   def __init__(self, key):
     self.key = key
     self.start = 0
+    #start_time = time.perf_counter()
     self.key_list = _calculate_key(self.key)
+    #end_time = time.perf_counter()
+    #execution_time = end_time - start_time
+
+    #print(f"The keyscheduler took {execution_time:.6f} seconds to execute.")
     #print(len(self.key_list))
 
   def get_key(self):
@@ -253,7 +259,12 @@ def convert_to_col_major(arr):
 
 def aes(state,key):
     #key0 = translate_into_hex(key)
+    start_time = time.perf_counter()
     keyScheduler = KeyScheduler(key)
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+
+    print(f"The keyscheduler took {execution_time:.6f} seconds to execute.")
     round_key = keyScheduler.get_key()
      
     #print(f"state:{state},len:{len(state)}")
@@ -341,8 +352,8 @@ def pkcs_7(hex_text):
 
 
 def cbc_mode_decrypt(solution):
-    IV = solution.res[-1] #last 16 items are IV 
-    enc = solution.res[:-1]
+    IV = solution.res[0] #first 16 items are IV 
+    enc = solution.res[1:]
     # bytes_to_remove = convert_hex_string_to_decimal(enc[-1][-1])
     # for i in range(len(enc[-1])-1,len(enc[-1])-bytes_to_remove-1,-1):
 
@@ -390,7 +401,6 @@ def ecb_mode_encrypt(text,key):
             res,key_sched = aes(state,key0)
             key_schedulers.append(key_sched)
             final_res.append(res)
-            IV_rand = res 
             start = start + 16
             #print(f"start: {start}") 
         # state = word_xor(IV_rand,state[start:]) #have to do padding here
@@ -439,6 +449,7 @@ def cbc_mode_encrypt(text,key):
     IV_rand = [hex(i) for i in IV_rand]
     IV_start = IV_rand.copy()
     final_res = []
+    final_res.append(IV_start)
     #print(state)
     #print(IV_rand)
     
@@ -462,7 +473,7 @@ def cbc_mode_encrypt(text,key):
         # state = word_xor(IV_rand,state[start:]) #have to do padding here
         # res = aes(state,key0)
         # final_res.append(res)
-        final_res.append(IV_start)
+
         solution.res = final_res
         solution.key_schedulers = key_schedulers
         return solution
@@ -482,28 +493,40 @@ def hex_to_ascii(hex_text):
 #matrix = transform_into_matrix(numbers)
 #print(matrix)
 solution = Solution(1,2)
-solution = ecb_mode_encrypt("Once upon a time, there was a humming bird, who was very hopeful about life. One day it died","Thats my Kung Fu")
+start_time = time.perf_counter()
+key = "Thats my Kung Fu"
+solution = cbc_mode_encrypt("Once upon a time, there was a humming bird, who was very hopeful about life. One day it died",key)
+end_time = time.perf_counter()
+execution_time = end_time - start_time
+print(f"The encryption took {execution_time:.6f} seconds to execute.")
+print(f"key: {key}")
+print(f"Encypted text: {solution.res}")
 # view_matrix(matrix)
 # enc,ks = aes(translate_into_hex("Two One Nine Two"),translate_into_hex("Thats my Kung Fu"))
 # print(enc)
 # print(ks)
 
 #print(solution.res)
-# dec = cbc_mode_decrypt(solution)
+start_time = time.perf_counter()
+dec = cbc_mode_decrypt(solution)
+end_time = time.perf_counter()
+execution_time = end_time - start_time
+print(f"The decryption took {execution_time:.6f} seconds to execute.")
+
+pad = convert_hex_string_to_decimal(dec[-1][-1])
+dec[-1] = dec[-1][:-pad]
+print(f"decrypted in Hex:{dec}")
+print("Decrypted in text: ")
+for texts in dec:
+    print(hex_to_ascii(texts),end="")
+
+# dec = ecb_mode_decrypt(solution)
 # print(dec[-1])
 # pad = convert_hex_string_to_decimal(dec[-1][-1])
 # dec[-1] = dec[-1][:-pad]
 # print(dec[-1])
 # for texts in dec:
 #     print(hex_to_ascii(texts),end="")
-
-dec = ecb_mode_decrypt(solution)
-print(dec[-1])
-pad = convert_hex_string_to_decimal(dec[-1][-1])
-dec[-1] = dec[-1][:-pad]
-print(dec[-1])
-for texts in dec:
-    print(hex_to_ascii(texts),end="")
 
 # dec = aes_decrypt(enc,ks)
 # print(dec)
