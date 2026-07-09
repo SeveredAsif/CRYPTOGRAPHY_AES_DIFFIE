@@ -1,6 +1,6 @@
 #target is, giving a plaintext and key and get the encrypted text after 10 rounds. implement a key generator module 
 from aes_helpers import Sbox, InvSbox, Rcon, Mixer, InvMixer, gf_mult 
-import math 
+import random 
 class KeyScheduler:
   def __init__(self, key):
     self.key = key
@@ -147,7 +147,6 @@ def g(key_list):
     shifted_arr = byte_left_shift(key_list[-1],1)
     return change_arr_using_sbox(shifted_arr)
     
- 
 
 def translate_into_hex(text:str):
     number = []
@@ -219,22 +218,21 @@ def convert_to_col_major(arr):
 
 
 
-def aes(text,key):
-    key0 = translate_into_hex(key)
-    keyScheduler = KeyScheduler(key0)
+def aes(state,key):
+    #key0 = translate_into_hex(key)
+    keyScheduler = KeyScheduler(key)
     round_key = keyScheduler.get_key()
-    state = translate_into_hex(text) 
-    #print(f"state:{state}")
+     
+    print(f"state:{state},len:{len(state)}")
     #print(f"round_key:{round_key}")
     state = word_xor(state,round_key)
     statetoshow = transform_into_matrix(state) 
-    view_matrix(statetoshow)
+    #view_matrix(statetoshow)
     for round in range(10):
         print(f"round: {round+1}")
         #print(state)
         state = change_arr_using_sbox(state)
         #print(state)
-        #state = word_xor()
         rows = convert_to_row_major(state)
         for i,_ in enumerate(rows):
             rows[i] = byte_left_shift(rows[i],i) 
@@ -254,23 +252,53 @@ def aes(text,key):
         round_key = keyScheduler.get_key()
         state = word_xor(state,round_key)
         statetoshow = transform_into_matrix(state) 
-        view_matrix(statetoshow)
+        #view_matrix(statetoshow)
         
-        #print(state)
-        # rows[0] = byte_left_shift(rows[0],0)
-        # print(rows[0])
-        # rows[1] = byte_left_shift(rows[1],1)
-        # print(rows[1])
-        #state = convert_to_row_major(state) #converting back to column major 
-         
-        # round_key = transform_into_matrix(keyScheduler.get_key())  
-        # print(round_key) 
-    return 0   
+    return state    
 
 
+def cbc_mode(text,key):
+    key0 = translate_into_hex(key)
+    #print(len(key0))
+    if(len(key0)>16): #truncating key 
+        key0 = key0[0:16]
+        #print(len(key0))
+    state = translate_into_hex(text)
+    old_state = state.copy()
+    print(f"state len is : {len(state)}")
+    random.seed(42)
+
+    IV_rand = [random.randint(0, 255) for _ in range(16)]
+    IV_rand = [hex(i) for i in IV_rand]
+    IV_start = IV_rand.copy()
+    final_res = []
+    #print(state)
+    #print(IV_rand)
+    
+    if(len(state)<=16):
+     print("here")
+     state = word_xor(IV_rand,state) 
+     aes(state,key0)
+    else:
+        start = 0 
+        print("to the big")
+        while(start+16<len(old_state)):
+            print(start)
+            state = word_xor(IV_rand,old_state[start:start+16])
+            res = aes(state,key0)
+            final_res.append(res)
+            IV_rand = res 
+            start = start + 16
+            print(f"start: {start}") 
+        # state = word_xor(IV_rand,state[start:]) #have to do padding here
+        # res = aes(state,key0)
+        # final_res.append(res)
+
+   
 numbers = translate_into_hex("Thats my Kung Fu")
 #print(numbers)
 matrix = transform_into_matrix(numbers)
 #print(matrix)
+cbc_mode("Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two","Thats my Kung Fu")
 #view_matrix(matrix)
-aes("Two One Nine Two","Thats my Kung Fu")
+#aes("Two One Nine Two","Thats my Kung Fu")
