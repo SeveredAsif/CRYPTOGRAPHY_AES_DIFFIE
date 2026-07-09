@@ -4,8 +4,9 @@ import random
 
 
 class Solution:
-    def __init__(self,res):
+    def __init__(self,res,key_schedulers):
         self.res = res 
+        self.key_schedulers = key_schedulers
 
 
 
@@ -21,7 +22,7 @@ class KeyScheduler:
       self.start = self.start+4 
       return return_val
   def get_key_in_reverse(self):
-      print(f"FIRST START:{self.start},({self.start-4},{self.start-1})")
+      #print(f"FIRST START:{self.start},({self.start-4},{self.start-1})")
       return_val= self.key_list[self.start-4:self.start]
       self.start = self.start-4 
       return return_val
@@ -255,7 +256,7 @@ def aes(state,key):
     keyScheduler = KeyScheduler(key)
     round_key = keyScheduler.get_key()
      
-    print(f"state:{state},len:{len(state)}")
+    #print(f"state:{state},len:{len(state)}")
     #print(f"round_key:{round_key}")
     state = word_xor(state,round_key)
     statetoshow = transform_into_matrix(state) 
@@ -294,7 +295,7 @@ def aes_decrypt(state,keyScheduler):
     round_key = keyScheduler.get_key_in_reverse()
     state = word_xor(state,round_key)
      
-    print(f"state:{state},len:{len(state)}")
+    #print(f"state:{state},len:{len(state)}")
     #print(f"round_key:{round_key}")
     #state = word_xor(state,round_key)
     statetoshow = transform_into_matrix(state) 
@@ -331,25 +332,46 @@ def aes_decrypt(state,keyScheduler):
 
 
 def pkcs_7(hex_text):
-    print(f"len: {len(hex_text)}")
+    #print(f"len: {len(hex_text)}")
     bytes_needed = 16 - len(hex_text)%16
     for _ in range(bytes_needed):
         hex_text.append(hex(bytes_needed))
-    print(f"curr: {hex_text}, len: {len(hex_text)}")
+    #print(f"curr: {hex_text}, len: {len(hex_text)}")
     return hex_text 
 
 
-def cbc_mode(text,key):
+def cbc_mode_decrypt(solution):
+    IV = solution.res[-1] #last 16 items are IV 
+    enc = solution.res[:-1]
+    # bytes_to_remove = convert_hex_string_to_decimal(enc[-1][-1])
+    # for i in range(len(enc[-1])-1,len(enc[-1])-bytes_to_remove-1,-1):
+
+    #print(f"enc is: {enc}!!!")
+    old_enc = enc.copy()
+    decrypted_text = [] 
+    round = len(solution.key_schedulers)
+    index = 0
+    for i in range(round-1,-1,-1):
+        index = round - (i+1)
+        dec = aes_decrypt(enc[index],solution.key_schedulers[i])
+        dec = word_xor(dec,IV)
+        decrypted_text.append(dec)
+        IV = old_enc[index]
+        #print(f"printingg:{IV}")
+    return decrypted_text 
+
+def cbc_mode_encrypt(text,key):
+    key_schedulers = []
     key0 = translate_into_hex(key)
     #print(len(key0))
     if(len(key0)>16): #truncating key 
         key0 = key0[0:16]
         #print(len(key0))
     state = translate_into_hex(text)
-    if(len(state)%16!=0):
-        state = pkcs_7(state)
+    #if(len(state)%16!=0):
+    state = pkcs_7(state)
     old_state = state.copy()
-    print(f"state len is : {len(state)}")
+    #print(f"state len is : {len(state)}")
     random.seed(42)
 
     IV_rand = [random.randint(0, 255) for _ in range(16)]
@@ -365,25 +387,25 @@ def cbc_mode(text,key):
      aes(state,key0)
     else:
         start = 0 
-        print("to the big")
+        #print("to the big")
         while(start+16<=len(old_state)):
             #print(start)
-            print(f"follow here: {old_state[start:start+16]},,end")
+            #print(f"follow here: {old_state[start:start+16]},,end")
             state = word_xor(IV_rand,old_state[start:start+16])
-            res,last_round_key = aes(state,key0)
+            res,key_sched = aes(state,key0)
+            key_schedulers.append(key_sched)
             final_res.append(res)
             IV_rand = res 
             start = start + 16
-            print(f"start: {start}") 
+            #print(f"start: {start}") 
         # state = word_xor(IV_rand,state[start:]) #have to do padding here
         # res = aes(state,key0)
         # final_res.append(res)
         final_res.append(IV_start)
-        solution = final_res
+        solution.res = final_res
+        solution.key_schedulers = key_schedulers
         return solution
-def decrypt_cbc(encrypted_text):
-    decrypted_text = encrypted_text 
-    return decrypted_text
+
 
 def hex_to_ascii(hex_text):
     text = []
@@ -398,14 +420,22 @@ def hex_to_ascii(hex_text):
 #print(numbers)
 #matrix = transform_into_matrix(numbers)
 #print(matrix)
-solution = Solution(1)
-#solution = cbc_mode("Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two","Thats my Kung Fu")
-#view_matrix(matrix)
-enc,ks = aes(translate_into_hex("Two One Nine Two"),translate_into_hex("Thats my Kung Fu"))
-print(enc)
-print(ks)
+solution = Solution(1,2)
+solution = cbc_mode_encrypt("Once upon a time, there was a humming bird, who was very hopeful about life. One day it died","Thats my Kung Fu")
+# view_matrix(matrix)
+# enc,ks = aes(translate_into_hex("Two One Nine Two"),translate_into_hex("Thats my Kung Fu"))
+# print(enc)
+# print(ks)
 
+#print(solution.res)
+dec = cbc_mode_decrypt(solution)
+print(dec[-1])
+pad = convert_hex_string_to_decimal(dec[-1][-1])
+dec[-1] = dec[-1][:-pad]
+print(dec[-1])
+for texts in dec:
+    print(hex_to_ascii(texts),end="")
 
-dec = aes_decrypt(enc,ks)
-print(dec)
-print(hex_to_ascii(dec))
+# dec = aes_decrypt(enc,ks)
+# print(dec)
+# print(hex_to_ascii(dec))
