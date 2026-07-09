@@ -1,6 +1,14 @@
 #target is, giving a plaintext and key and get the encrypted text after 10 rounds. implement a key generator module 
 from aes_helpers import Sbox, InvSbox, Rcon, Mixer, InvMixer, gf_mult 
 import random 
+
+
+class Solution:
+    def __init__(self,res):
+        self.res = res 
+
+
+
 class KeyScheduler:
   def __init__(self, key):
     self.key = key
@@ -12,7 +20,11 @@ class KeyScheduler:
       return_val= self.key_list[self.start:self.start+4]
       self.start = self.start+4 
       return return_val
-  
+  def get_key_in_reverse(self):
+      print(f"FIRST START:{self.start},({self.start-4},{self.start-1})")
+      return_val= self.key_list[self.start-4:self.start]
+      self.start = self.start-4 
+      return return_val
 
 
 def _calculate_key(key):
@@ -115,6 +127,14 @@ def byte_left_shift(word,amount):
     #print(shifted_arr)
     return shifted_arr
 
+def byte_right_shift(word,amount):
+    shifted_arr = word.copy()
+    for i in range(len(word)):
+        shifted_arr[(i+amount)%len(word)]=word[i]
+    #print(word)
+    #print(shifted_arr)
+    return shifted_arr
+
 def find_Sbox_entry(entry):
     if(len(entry)<4):
         sbox_row=0
@@ -133,6 +153,8 @@ def find_Sbox_entry(entry):
             sbox_row = int(entry[2])
     return sbox_row*16+sbox_col
 
+
+
 def change_arr_using_sbox(arr):
     replaced_arr = []
     for entries in arr:
@@ -142,6 +164,16 @@ def change_arr_using_sbox(arr):
         #print(sbox_row,sbox_col,hex(Sbox[sbox_row*16+sbox_col]))
     #print(replaced_arr)
     return replaced_arr
+def change_arr_using_inv_sbox(arr):
+    replaced_arr = []
+    for entries in arr:
+        #print(entries)
+        replaced_arr.append(hex(InvSbox[find_Sbox_entry(entries)]))
+        #print(entries)
+        #print(sbox_row,sbox_col,hex(Sbox[sbox_row*16+sbox_col]))
+    #print(replaced_arr)
+    return replaced_arr
+
 
 def g(key_list):
     shifted_arr = byte_left_shift(key_list[-1],1)
@@ -229,7 +261,7 @@ def aes(state,key):
     statetoshow = transform_into_matrix(state) 
     #view_matrix(statetoshow)
     for round in range(10):
-        print(f"round: {round+1}")
+        #print(f"round: {round+1}")
         #print(state)
         state = change_arr_using_sbox(state)
         #print(state)
@@ -254,7 +286,57 @@ def aes(state,key):
         statetoshow = transform_into_matrix(state) 
         #view_matrix(statetoshow)
         
+    return state,keyScheduler     
+
+def aes_decrypt(state,keyScheduler):
+    #key0 = translate_into_hex(key)
+
+    round_key = keyScheduler.get_key_in_reverse()
+    state = word_xor(state,round_key)
+     
+    print(f"state:{state},len:{len(state)}")
+    #print(f"round_key:{round_key}")
+    #state = word_xor(state,round_key)
+    statetoshow = transform_into_matrix(state) 
+    #view_matrix(statetoshow)
+    for round in range(10):
+        #print(f"round: {round+1}")
+        #print(state)
+        #print(state)
+        rows = convert_to_row_major(state)
+        for i,_ in enumerate(rows):
+            rows[i] = byte_right_shift(rows[i],i) 
+        #print(rows)
+        flattened_rows = flatten_arr(rows)
+        state = convert_to_col_major(flattened_rows)
+        state = change_arr_using_inv_sbox(state)
+        #print(state)
+        #mixer_flattened = flatten_arr(Mixer)
+        #print(Mixer)
+        
+        round_key = keyScheduler.get_key_in_reverse()
+        state = word_xor(state,round_key)
+
+        unflattened_state = unflatten_arr(state)
+        #print(unflatten_arr(state))
+        #print(matrix_multiply(unflattened_state,Mixer))
+        if(round!=9):
+            state = matrix_multiply(unflattened_state,InvMixer)
+            state = flatten_arr(state)
+
+        statetoshow = transform_into_matrix(state) 
+        #view_matrix(statetoshow)
+        
     return state    
+
+
+def pkcs_7(hex_text):
+    print(f"len: {len(hex_text)}")
+    bytes_needed = 16 - len(hex_text)%16
+    for _ in range(bytes_needed):
+        hex_text.append(hex(bytes_needed))
+    print(f"curr: {hex_text}, len: {len(hex_text)}")
+    return hex_text 
 
 
 def cbc_mode(text,key):
@@ -264,6 +346,8 @@ def cbc_mode(text,key):
         key0 = key0[0:16]
         #print(len(key0))
     state = translate_into_hex(text)
+    if(len(state)%16!=0):
+        state = pkcs_7(state)
     old_state = state.copy()
     print(f"state len is : {len(state)}")
     random.seed(42)
@@ -276,16 +360,17 @@ def cbc_mode(text,key):
     #print(IV_rand)
     
     if(len(state)<=16):
-     print("here")
+     #print("here")
      state = word_xor(IV_rand,state) 
      aes(state,key0)
     else:
         start = 0 
         print("to the big")
-        while(start+16<len(old_state)):
-            print(start)
+        while(start+16<=len(old_state)):
+            #print(start)
+            print(f"follow here: {old_state[start:start+16]},,end")
             state = word_xor(IV_rand,old_state[start:start+16])
-            res = aes(state,key0)
+            res,last_round_key = aes(state,key0)
             final_res.append(res)
             IV_rand = res 
             start = start + 16
@@ -293,12 +378,34 @@ def cbc_mode(text,key):
         # state = word_xor(IV_rand,state[start:]) #have to do padding here
         # res = aes(state,key0)
         # final_res.append(res)
+        final_res.append(IV_start)
+        solution = final_res
+        return solution
+def decrypt_cbc(encrypted_text):
+    decrypted_text = encrypted_text 
+    return decrypted_text
 
-   
-numbers = translate_into_hex("Thats my Kung Fu")
+def hex_to_ascii(hex_text):
+    text = []
+    for txt in hex_text:
+        dec = convert_hex_string_to_decimal(txt)
+        letter = chr(dec)  
+        text.append(letter)
+    return "".join(text)
+    
+
+#numbers = translate_into_hex("Thats my Kung Fu")
 #print(numbers)
-matrix = transform_into_matrix(numbers)
+#matrix = transform_into_matrix(numbers)
 #print(matrix)
-cbc_mode("Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two","Thats my Kung Fu")
+solution = Solution(1)
+#solution = cbc_mode("Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two Two One Nine Two","Thats my Kung Fu")
 #view_matrix(matrix)
-#aes("Two One Nine Two","Thats my Kung Fu")
+enc,ks = aes(translate_into_hex("Two One Nine Two"),translate_into_hex("Thats my Kung Fu"))
+print(enc)
+print(ks)
+
+
+dec = aes_decrypt(enc,ks)
+print(dec)
+print(hex_to_ascii(dec))
