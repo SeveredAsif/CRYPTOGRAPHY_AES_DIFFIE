@@ -192,7 +192,10 @@ def translate_into_hex(text:str):
     
     for i in text:
         #print(hex(ord(i))) 
-        number.append(hex(ord(i)))
+        if( isinstance(i,str)):
+            number.append(hex(ord(i)))
+        else:
+            number.append(hex((i)))
     return number   
 
 def transform_into_matrix(numbers):
@@ -362,6 +365,7 @@ def cbc_mode_decrypt(solution):
     decrypted_text = [] 
     round = len(solution.key_schedulers)
     index = 0
+    print(round)
     for i in range(round-1,-1,-1):
         index = round - (i+1)
         dec = aes_decrypt(enc[index],solution.key_schedulers[i])
@@ -390,7 +394,9 @@ def ecb_mode_encrypt(text,key):
     
     if(len(state)<=16):
      #print("here")
-     aes(state,key0)
+        res,key_sched = aes(state,key0)
+        key_schedulers.append(key_sched)
+        final_res.append(res)
     else:
         start = 0 
         #print("to the big")
@@ -406,9 +412,9 @@ def ecb_mode_encrypt(text,key):
         # state = word_xor(IV_rand,state[start:]) #have to do padding here
         # res = aes(state,key0)
         # final_res.append(res)
-        solution.res = final_res
-        solution.key_schedulers = key_schedulers
-        return solution
+    solution.res = final_res
+    solution.key_schedulers = key_schedulers
+    return solution
 
 
 def ecb_mode_decrypt(solution):
@@ -456,7 +462,9 @@ def cbc_mode_encrypt(text,key):
     if(len(state)<=16):
      #print("here")
      state = word_xor(IV_rand,state) 
-     aes(state,key0)
+     res,key_sched = aes(state,key0)
+     key_schedulers.append(key_sched)
+     final_res.append(res)
     else:
         start = 0 
         #print("to the big")
@@ -474,9 +482,9 @@ def cbc_mode_encrypt(text,key):
         # res = aes(state,key0)
         # final_res.append(res)
 
-        solution.res = final_res
-        solution.key_schedulers = key_schedulers
-        return solution
+    solution.res = final_res
+    solution.key_schedulers = key_schedulers
+    return solution
 
 
 def hex_to_ascii(hex_text):
@@ -494,8 +502,8 @@ def hex_to_ascii(hex_text):
 #print(matrix)
 solution = Solution(1,2)
 start_time = time.perf_counter()
-key = "Thats my Kung Fu"
-solution = cbc_mode_encrypt("Once upon a time, there was a humming bird, who was very hopeful about life. One day it died",key)
+key = "BUET CSE20 Batch"
+solution = ecb_mode_encrypt("We need picnic",key)
 end_time = time.perf_counter()
 execution_time = end_time - start_time
 print(f"The encryption took {execution_time:.6f} seconds to execute.")
@@ -508,11 +516,11 @@ print(f"Encypted text: {solution.res}")
 
 #print(solution.res)
 start_time = time.perf_counter()
-dec = cbc_mode_decrypt(solution)
+dec = ecb_mode_decrypt(solution)
 end_time = time.perf_counter()
 execution_time = end_time - start_time
 print(f"The decryption took {execution_time:.6f} seconds to execute.")
-
+print(dec)
 pad = convert_hex_string_to_decimal(dec[-1][-1])
 dec[-1] = dec[-1][:-pad]
 print(f"decrypted in Hex:{dec}")
@@ -531,3 +539,59 @@ for texts in dec:
 # dec = aes_decrypt(enc,ks)
 # print(dec)
 # print(hex_to_ascii(dec))
+
+# import matplotlib.pyplot as plt
+# from PIL import Image
+# import numpy as np
+
+# # -----------------------------
+# # Read image
+# # -----------------------------
+# img = Image.open("sampleio.png").convert("RGB")
+# img_array = np.array(img)
+
+# height, width, channels = img_array.shape
+
+# # Flatten into bytes
+# plain_bytes = img_array.flatten().tolist()
+
+# # ---------------------------------
+# # Encrypt using your AES CBC
+# # ---------------------------------
+# key = "Thats my Kung Fu"
+
+# encrypted_bytes = cbc_mode_encrypt(plain_bytes, key)
+# # encrypt_bytes_cbc should return a list of integers (0-255)
+
+# encrypted_array = np.array(encrypted_bytes[:len(plain_bytes)],
+#                            dtype=np.uint8).reshape(height, width, channels)
+
+# # ---------------------------------
+# # Decrypt
+# # ---------------------------------
+# decrypted_bytes = cbc_mode_decrypt(encrypted_bytes, key)
+
+# decrypted_array = np.array(decrypted_bytes[:len(plain_bytes)],
+#                            dtype=np.uint8).reshape(height, width, channels)
+
+# # ---------------------------------
+# # Display
+# # ---------------------------------
+# plt.figure(figsize=(15,5))
+
+# plt.subplot(1,3,1)
+# plt.imshow(img_array)
+# plt.title("Original")
+# plt.axis("off")
+
+# plt.subplot(1,3,2)
+# plt.imshow(encrypted_array)
+# plt.title("Encrypted")
+# plt.axis("off")
+
+# plt.subplot(1,3,3)
+# plt.imshow(decrypted_array)
+# plt.title("Decrypted")
+# plt.axis("off")
+
+# plt.show()
