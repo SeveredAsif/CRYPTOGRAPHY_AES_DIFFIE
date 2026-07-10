@@ -15,7 +15,6 @@ class Solution:
 class KeyScheduler:
   def __init__(self, key):
     self.key = key
-    self.start = 0
     #start_time = time.perf_counter()
     self.key_list = _calculate_key(self.key)
     #end_time = time.perf_counter()
@@ -24,20 +23,23 @@ class KeyScheduler:
     #print(f"The keyscheduler took {execution_time:.6f} seconds to execute.")
     #print(len(self.key_list))
 
-  def get_key(self):
-      return_val= self.key_list[self.start:self.start+4]
-      self.start = self.start+4 
+  def get_key(self,round):
+      start = round*4
+      return_val= self.key_list[start:start+4]
+      #self.start = self.start+4 
       return return_val
-  def get_key_in_reverse(self):
-      #print(f"FIRST START:{self.start},({self.start-4},{self.start-1})")
-      return_val= self.key_list[self.start-4:self.start]
-      self.start = self.start-4 
-      return return_val
+  
+#   def get_key_in_reverse(self):
+#       #print(f"FIRST START:{self.start},({self.start-4},{self.start-1})")
+#       return_val= self.key_list[self.start-4:self.start]
+#       self.start = self.start-4 
+#       return return_val
 
 
 def _calculate_key(key):
     key_init = transform_into_matrix(key)
     key_list = key_init.copy()
+    #print(f"key list size:{len(key_list)},key_")
     for i in range(4,44):
         if(i%4==0):
             round = int(i/4)
@@ -51,8 +53,9 @@ def _calculate_key(key):
             #print(x)
             #print(i,key_list)
             key_list.append(bit_by_bit_xor(x , key_list[i-4]))
-            #print(key_list) 
+            #print(key_list,i) 
         else:
+            #print(key_list,i)
             key_list.append(bit_by_bit_xor(key_list[i-1],key_list[i-4]))
     #print(key_list)
     return key_list
@@ -262,15 +265,15 @@ def convert_to_col_major(arr):
 
 
 
-def aes(state,key):
+def aes(state,keyScheduler):
     #key0 = translate_into_hex(key)
-    start_time = time.perf_counter()
-    keyScheduler = KeyScheduler(key)
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
+    # start_time = time.perf_counter()
+    # #keyScheduler = KeyScheduler(key)
+    # end_time = time.perf_counter()
+    # execution_time = end_time - start_time
 
-    print(f"The keyscheduler took {execution_time:.6f} seconds to execute.")
-    round_key = keyScheduler.get_key()
+    # print(f"The keyscheduler took {execution_time:.6f} seconds to execute.")
+    round_key = keyScheduler.get_key(0)
      
     #print(f"state:{state},len:{len(state)}")
     #print(f"round_key:{round_key}")
@@ -298,17 +301,17 @@ def aes(state,key):
         if(round!=9):
             state = matrix_multiply(unflattened_state,Mixer)
             state = flatten_arr(state)
-        round_key = keyScheduler.get_key()
+        round_key = keyScheduler.get_key(round+1)
         state = word_xor(state,round_key)
         statetoshow = transform_into_matrix(state) 
         #view_matrix(statetoshow)
         
-    return state,keyScheduler     
+    return state     
 
 def aes_decrypt(state,keyScheduler):
     #key0 = translate_into_hex(key)
 
-    round_key = keyScheduler.get_key_in_reverse()
+    round_key = keyScheduler.get_key(10)
     state = word_xor(state,round_key)
      
     #print(f"state:{state},len:{len(state)}")
@@ -331,7 +334,7 @@ def aes_decrypt(state,keyScheduler):
         #mixer_flattened = flatten_arr(Mixer)
         #print(Mixer)
         
-        round_key = keyScheduler.get_key_in_reverse()
+        round_key = keyScheduler.get_key(9-round)
         state = word_xor(state,round_key)
 
         unflattened_state = unflatten_arr(state)
@@ -367,7 +370,14 @@ def ecb_mode_encrypt(text,key):
         #print(len(key0))
     if(len(key0)<16):
         key0 = key0.ljust(16, '0')
-    print(key0)
+    #print(key0)
+    start_time = time.perf_counter()
+    #keyScheduler = KeyScheduler(key)
+    keyScheduler = KeyScheduler(key0)
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+
+    print(f"The keyscheduler took {execution_time:.6f} seconds to execute.")
     state = translate_into_hex(text)
     #if(len(state)%16!=0):
     state = pkcs_7(state)
@@ -381,8 +391,8 @@ def ecb_mode_encrypt(text,key):
     
     if(len(state)<=16):
      #print("here")
-        res,key_sched = aes(state,key0)
-        key_schedulers.append(key_sched)
+        res = aes(state,keyScheduler)
+        #key_schedulers.append(key_sched)
         final_res.append(res)
     else:
         start = 0 
@@ -391,8 +401,8 @@ def ecb_mode_encrypt(text,key):
             #print(start)
             #print(f"follow here: {old_state[start:start+16]},,end")
             state = old_state[start:start+16]
-            res,key_sched = aes(state,key0)
-            key_schedulers.append(key_sched)
+            res = aes(state,keyScheduler)
+            #key_schedulers.append(key_sched)
             final_res.append(res)
             start = start + 16
             #print(f"start: {start}") 
@@ -400,25 +410,30 @@ def ecb_mode_encrypt(text,key):
         # res = aes(state,key0)
         # final_res.append(res)
     solution.res = final_res
-    solution.key_schedulers = key_schedulers
+    #solution.key_schedulers = key_schedulers
     return solution
 
 
-def ecb_mode_decrypt(solution):
+def ecb_mode_decrypt(solution,key0):
     enc = solution.res
     # bytes_to_remove = convert_hex_string_to_decimal(enc[-1][-1])
     # for i in range(len(enc[-1])-1,len(enc[-1])-bytes_to_remove-1,-1):
-
+    if(len(key0)>16): #truncating key 
+        key0 = key0[0:16]
+        #print(len(key0))
+    if(len(key0)<16):
+        key0 = key0.ljust(16, '0')
+    keyScheduler = KeyScheduler(key0)
     #print(f"enc is: {enc}!!!")
     old_enc = enc.copy()
     decrypted_text = [] 
-    round = len(solution.key_schedulers)
+    round = len(solution.res)
     index = 0
     #print(f"enc len: {len(enc)}")
     for i in range(round-1,-1,-1):
         index = round - (i+1)
         #print(index)
-        dec = aes_decrypt(enc[index],solution.key_schedulers[i])
+        dec = aes_decrypt(enc[index],keyScheduler)
         decrypted_text.append(dec)
         #print(f"printingg:{IV}")
     return decrypted_text 
@@ -426,6 +441,7 @@ def ecb_mode_decrypt(solution):
 
 def cbc_mode_encrypt(text,key):
     key_schedulers = []
+    print(f"shared key in cbc encrypt: {key}")
     key0 = translate_into_hex(key)
     solution = Solution(1,2)
     #print(len(key0))
@@ -433,8 +449,17 @@ def cbc_mode_encrypt(text,key):
         key0 = key0[0:16]
         #print(len(key0))
     if(len(key0)<16):
-        key0 = key0.ljust(16, '0')
+        key0 = key0 + ['0x00'] * (16 - len(key0))
     state = translate_into_hex(text)
+
+    #print(key0)
+    start_time = time.perf_counter()
+    #keyScheduler = KeyScheduler(key)
+    keyScheduler = KeyScheduler(key0)
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+
+    print(f"The keyscheduler took {execution_time:.6f} seconds to execute.")
     #if(len(state)%16!=0):
     state = pkcs_7(state)
     old_state = state.copy()
@@ -452,8 +477,8 @@ def cbc_mode_encrypt(text,key):
     if(len(state)<=16):
      #print("here")
      state = word_xor(IV_rand,state) 
-     res,key_sched = aes(state,key0)
-     key_schedulers.append(key_sched)
+     res = aes(state,keyScheduler)
+     #key_schedulers.append(key_sched)
      final_res.append(res)
     else:
         start = 0 
@@ -462,8 +487,8 @@ def cbc_mode_encrypt(text,key):
             #print(start)
             #print(f"follow here: {old_state[start:start+16]},,end")
             state = word_xor(IV_rand,old_state[start:start+16])
-            res,key_sched = aes(state,key0)
-            key_schedulers.append(key_sched)
+            res = aes(state,keyScheduler)
+            #key_schedulers.append(key_sched)
             final_res.append(res)
             IV_rand = res 
             start = start + 16
@@ -473,24 +498,31 @@ def cbc_mode_encrypt(text,key):
         # final_res.append(res)
 
     solution.res = final_res
-    solution.key_schedulers = key_schedulers
+    #solution.key_schedulers = key_schedulers
     return solution
 
-def cbc_mode_decrypt(solution):
-    IV = solution.res[0] #first 16 items are IV 
-    enc = solution.res[1:]
+def cbc_mode_decrypt(solution,key0):
+    IV = solution[0] #first 16 items are IV 
+    enc = solution[1:]
+    print(f"shared key in cbc decrypt: {key0}")
+    key0 = translate_into_hex(key0)
+    if(len(key0)>16): #truncating key 
+        key0 = key0[0:16]
+        #print(len(key0))
+    if(len(key0)<16):
+        key0 = key0 + ['0x00'] * (16 - len(key0))
     # bytes_to_remove = convert_hex_string_to_decimal(enc[-1][-1])
     # for i in range(len(enc[-1])-1,len(enc[-1])-bytes_to_remove-1,-1):
-
+    keyScheduler = KeyScheduler(key0)
     #print(f"enc is: {enc}!!!")
     old_enc = enc.copy()
     decrypted_text = [] 
-    round = len(solution.key_schedulers)
+    round = len(solution)
     index = 0
     print(round)
-    for i in range(round-1,-1,-1):
+    for i in range(round-1,0,-1):
         index = round - (i+1)
-        dec = aes_decrypt(enc[index],solution.key_schedulers[i])
+        dec = aes_decrypt(enc[index],keyScheduler)
         dec = word_xor(dec,IV)
         decrypted_text.append(dec)
         IV = old_enc[index]
@@ -506,7 +538,7 @@ def hex_to_ascii(hex_text):
     return "".join(text)
     
 
-def user_encrypt(key,text):
+def user_encrypt(text,key):
 
 #numbers = translate_into_hex("Thats my Kung Fu")
 #print(numbers)
@@ -529,9 +561,9 @@ def user_encrypt(key,text):
 
     #print(solution.res)
 
-def user_decrypt(solution):
+def user_decrypt(solution,key):
     start_time = time.perf_counter()
-    dec = cbc_mode_decrypt(solution)
+    dec = cbc_mode_decrypt(solution,key)
     end_time = time.perf_counter()
     execution_time = end_time - start_time
     print(f"The decryption took {execution_time:.6f} seconds to execute.")
@@ -546,6 +578,9 @@ def user_decrypt(solution):
         result += hex_to_ascii(texts)
         #print(hex_to_ascii(texts),end="")
     return result 
+
+# enc = user_encrypt("Asif","Bhaat")
+# print(user_decrypt(enc.res,"Bhaat"))
 
 # dec = ecb_mode_decrypt(solution)
 # print(dec[-1])

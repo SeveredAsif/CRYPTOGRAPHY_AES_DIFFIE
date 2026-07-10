@@ -45,9 +45,9 @@ print(data)
 from aes import user_encrypt
 import pickle
 
-solution = user_encrypt(str(shared_secret),"Lets Go! We are kinda doomed. I am sending whole solution, which is really really bad. I have to fix these. Oh noo, deadline is approaching")
+solution = user_encrypt("Lets Go!Wooojooooooooooo",str(shared_secret))
 # conn.sendall(solution)
-conn.sendall(pickle.dumps(solution))
+conn.sendall(pickle.dumps(solution.res))
 # data = conn.recv(1024).decode()
 # print(data) 
 

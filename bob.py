@@ -38,7 +38,7 @@ data = client.recv(100000)
 
 solution = pickle.loads(data)
 # solution = client.recv(1024)
-plain_text = user_decrypt(solution)
+plain_text = user_decrypt(solution,str(shared_secret))
 
 print(plain_text)
 
