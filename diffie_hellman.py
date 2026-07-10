@@ -1,16 +1,8 @@
 # Python3 program Miller-Rabin primality test
 import random 
-import math
+
 import time 
-def find_prime_factors(n):
-    res = []
-    for i in range(math.floor(math.sqrt(n))):
-        if(not isPrime(i,4)):
-            continue 
-        if(n%i==0):
-            res.append(i)
-            break
-    return res 
+
 
 # Utility function to do
 # modular exponentiation.
@@ -109,7 +101,7 @@ def isPrime( n, k):
 #     if (isPrime(n, k)):
 #         print(n , end=" ");
 import random
-random.seed = 42 
+random.seed(42) 
 
 
 def diffie_chooseB(p,g):
@@ -133,7 +125,7 @@ def diffie_choose_pgA():
 
     g = random.randint(2,p)
 
-    while(pow(g,(p-1)//2,p)==1 or pow(g,p-1//q,p)==1):
+    while(pow(g,(p-1)//2,p)==1 or pow(g,(p-1)//q,p)==1):
         g = random.randint(2,p)
 
 

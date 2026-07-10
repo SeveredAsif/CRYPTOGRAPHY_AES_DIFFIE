@@ -3,6 +3,7 @@ from aes_helpers import Sbox, InvSbox, Rcon, Mixer, InvMixer, gf_mult
 import random 
 import time 
 
+random.seed(42)
 
 class Solution:
     def __init__(self,res,key_schedulers):
@@ -425,6 +426,8 @@ def ecb_mode_decrypt(solution):
 
 def cbc_mode_encrypt(text,key):
     key_schedulers = []
+    key0 = translate_into_hex(key)
+    solution = Solution(1,2)
     #print(len(key0))
     if(len(key0)>16): #truncating key 
         key0 = key0[0:16]
@@ -436,7 +439,7 @@ def cbc_mode_encrypt(text,key):
     state = pkcs_7(state)
     old_state = state.copy()
     #print(f"state len is : {len(state)}")
-    random.seed(42)
+    #random.seed(42)
 
     IV_rand = [random.randint(0, 255) for _ in range(16)]
     IV_rand = [hex(i) for i in IV_rand]
@@ -512,7 +515,7 @@ def user_encrypt(key,text):
     solution = Solution(1,2)
     start_time = time.perf_counter()
     #key = "BUET CSE20 Batch"
-    solution = ecb_mode_encrypt(text,key)
+    solution = cbc_mode_encrypt(text,key)
     end_time = time.perf_counter()
     execution_time = end_time - start_time
     print(f"The encryption took {execution_time:.6f} seconds to execute.")
@@ -528,7 +531,7 @@ def user_encrypt(key,text):
 
 def user_decrypt(solution):
     start_time = time.perf_counter()
-    dec = ecb_mode_decrypt(solution)
+    dec = cbc_mode_decrypt(solution)
     end_time = time.perf_counter()
     execution_time = end_time - start_time
     print(f"The decryption took {execution_time:.6f} seconds to execute.")
