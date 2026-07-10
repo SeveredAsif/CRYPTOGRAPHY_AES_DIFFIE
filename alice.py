@@ -17,7 +17,7 @@ print("Connected by", addr)
 
 
 
-p,g,A,K_a = diffie_choose_pgA()
+p,g,A,K_a,_ = diffie_choose_pgA()
 
     
 

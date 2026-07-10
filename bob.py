@@ -17,7 +17,7 @@ print("g =", g)
 print("A =", A)
 
 from diffie_hellman import diffie_chooseB
-B,K_b = diffie_chooseB(p,g)
+B,K_b,_ = diffie_chooseB(p,g)
 
 client.sendall(str(B).encode())
 

@@ -2,8 +2,9 @@
 from aes_helpers import Sbox, InvSbox, Rcon, Mixer, InvMixer, gf_mult 
 import random 
 import time 
+from functools import lru_cache
+gf_mult = lru_cache(maxsize=None)(gf_mult)
 
-random.seed(42)
 
 class Solution:
     def __init__(self,res,key_schedulers):
@@ -697,58 +698,3 @@ def user_decrypt(solution, key, mode="CBC"):
 # print(dec)
 # print(hex_to_ascii(dec))
 
-# import matplotlib.pyplot as plt
-# from PIL import Image
-# import numpy as np
-
-# # -----------------------------
-# # Read image
-# # -----------------------------
-# img = Image.open("sampleio.png").convert("RGB")
-# img_array = np.array(img)
-
-# height, width, channels = img_array.shape
-
-# # Flatten into bytes
-# plain_bytes = img_array.flatten().tolist()
-
-# # ---------------------------------
-# # Encrypt using your AES CBC
-# # ---------------------------------
-# key = "Thats my Kung Fu"
-
-# encrypted_bytes = cbc_mode_encrypt(plain_bytes, key)
-# # encrypt_bytes_cbc should return a list of integers (0-255)
-
-# encrypted_array = np.array(encrypted_bytes[:len(plain_bytes)],
-#                            dtype=np.uint8).reshape(height, width, channels)
-
-# # ---------------------------------
-# # Decrypt
-# # ---------------------------------
-# decrypted_bytes = cbc_mode_decrypt(encrypted_bytes, key)
-
-# decrypted_array = np.array(decrypted_bytes[:len(plain_bytes)],
-#                            dtype=np.uint8).reshape(height, width, channels)
-
-# # ---------------------------------
-# # Display
-# # ---------------------------------
-# plt.figure(figsize=(15,5))
-
-# plt.subplot(1,3,1)
-# plt.imshow(img_array)
-# plt.title("Original")
-# plt.axis("off")
-
-# plt.subplot(1,3,2)
-# plt.imshow(encrypted_array)
-# plt.title("Encrypted")
-# plt.axis("off")
-
-# plt.subplot(1,3,3)
-# plt.imshow(decrypted_array)
-# plt.title("Decrypted")
-# plt.axis("off")
-
-# plt.show()
