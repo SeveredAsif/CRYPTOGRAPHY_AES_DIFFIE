@@ -187,9 +187,10 @@ def g(key_list):
     return change_arr_using_sbox(shifted_arr)
     
 
-def translate_into_hex(text:str):
+def translate_into_hex(text):
     number = []
-    
+    if(isinstance(text,int)):
+        return (hex(text))
     for i in text:
         #print(hex(ord(i))) 
         if( isinstance(i,str)):
@@ -354,40 +355,25 @@ def pkcs_7(hex_text):
     return hex_text 
 
 
-def cbc_mode_decrypt(solution):
-    IV = solution.res[0] #first 16 items are IV 
-    enc = solution.res[1:]
-    # bytes_to_remove = convert_hex_string_to_decimal(enc[-1][-1])
-    # for i in range(len(enc[-1])-1,len(enc[-1])-bytes_to_remove-1,-1):
-
-    #print(f"enc is: {enc}!!!")
-    old_enc = enc.copy()
-    decrypted_text = [] 
-    round = len(solution.key_schedulers)
-    index = 0
-    print(round)
-    for i in range(round-1,-1,-1):
-        index = round - (i+1)
-        dec = aes_decrypt(enc[index],solution.key_schedulers[i])
-        dec = word_xor(dec,IV)
-        decrypted_text.append(dec)
-        IV = old_enc[index]
-        #print(f"printingg:{IV}")
-    return decrypted_text 
 
 def ecb_mode_encrypt(text,key):
+    solution = Solution(1,2)
     key_schedulers = []
     key0 = translate_into_hex(key)
     #print(len(key0))
     if(len(key0)>16): #truncating key 
         key0 = key0[0:16]
         #print(len(key0))
+    if(len(key0)<16):
+        key0 = key0.ljust(16, '0')
+    print(key0)
     state = translate_into_hex(text)
     #if(len(state)%16!=0):
     state = pkcs_7(state)
     old_state = state.copy()
     #print(f"state len is : {len(state)}")
-    random.seed(42)
+    # import random
+    # random.seed(42)
     final_res = []
     #print(state)
     #print(IV_rand)
@@ -439,11 +425,12 @@ def ecb_mode_decrypt(solution):
 
 def cbc_mode_encrypt(text,key):
     key_schedulers = []
-    key0 = translate_into_hex(key)
     #print(len(key0))
     if(len(key0)>16): #truncating key 
         key0 = key0[0:16]
         #print(len(key0))
+    if(len(key0)<16):
+        key0 = key0.ljust(16, '0')
     state = translate_into_hex(text)
     #if(len(state)%16!=0):
     state = pkcs_7(state)
@@ -486,6 +473,26 @@ def cbc_mode_encrypt(text,key):
     solution.key_schedulers = key_schedulers
     return solution
 
+def cbc_mode_decrypt(solution):
+    IV = solution.res[0] #first 16 items are IV 
+    enc = solution.res[1:]
+    # bytes_to_remove = convert_hex_string_to_decimal(enc[-1][-1])
+    # for i in range(len(enc[-1])-1,len(enc[-1])-bytes_to_remove-1,-1):
+
+    #print(f"enc is: {enc}!!!")
+    old_enc = enc.copy()
+    decrypted_text = [] 
+    round = len(solution.key_schedulers)
+    index = 0
+    print(round)
+    for i in range(round-1,-1,-1):
+        index = round - (i+1)
+        dec = aes_decrypt(enc[index],solution.key_schedulers[i])
+        dec = word_xor(dec,IV)
+        decrypted_text.append(dec)
+        IV = old_enc[index]
+        #print(f"printingg:{IV}")
+    return decrypted_text 
 
 def hex_to_ascii(hex_text):
     text = []
@@ -496,37 +503,46 @@ def hex_to_ascii(hex_text):
     return "".join(text)
     
 
+def user_encrypt(key,text):
+
 #numbers = translate_into_hex("Thats my Kung Fu")
 #print(numbers)
 #matrix = transform_into_matrix(numbers)
 #print(matrix)
-solution = Solution(1,2)
-start_time = time.perf_counter()
-key = "BUET CSE20 Batch"
-solution = ecb_mode_encrypt("We need picnic",key)
-end_time = time.perf_counter()
-execution_time = end_time - start_time
-print(f"The encryption took {execution_time:.6f} seconds to execute.")
-print(f"key: {key}")
-print(f"Encypted text: {solution.res}")
-# view_matrix(matrix)
-# enc,ks = aes(translate_into_hex("Two One Nine Two"),translate_into_hex("Thats my Kung Fu"))
-# print(enc)
-# print(ks)
+    solution = Solution(1,2)
+    start_time = time.perf_counter()
+    #key = "BUET CSE20 Batch"
+    solution = ecb_mode_encrypt(text,key)
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    print(f"The encryption took {execution_time:.6f} seconds to execute.")
+    print(f"key: {key}")
+    print(f"Encypted text: {solution.res}")
+    return solution
+    # view_matrix(matrix)
+    # enc,ks = aes(translate_into_hex("Two One Nine Two"),translate_into_hex("Thats my Kung Fu"))
+    # print(enc)
+    # print(ks)
 
-#print(solution.res)
-start_time = time.perf_counter()
-dec = ecb_mode_decrypt(solution)
-end_time = time.perf_counter()
-execution_time = end_time - start_time
-print(f"The decryption took {execution_time:.6f} seconds to execute.")
-print(dec)
-pad = convert_hex_string_to_decimal(dec[-1][-1])
-dec[-1] = dec[-1][:-pad]
-print(f"decrypted in Hex:{dec}")
-print("Decrypted in text: ")
-for texts in dec:
-    print(hex_to_ascii(texts),end="")
+    #print(solution.res)
+
+def user_decrypt(solution):
+    start_time = time.perf_counter()
+    dec = ecb_mode_decrypt(solution)
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    print(f"The decryption took {execution_time:.6f} seconds to execute.")
+    print(dec)
+    pad = convert_hex_string_to_decimal(dec[-1][-1])
+    dec[-1] = dec[-1][:-pad]
+    
+    print(f"decrypted in Hex:{dec}")
+    result = ""
+    print("Decrypted in text: ")
+    for texts in dec:
+        result += hex_to_ascii(texts)
+        #print(hex_to_ascii(texts),end="")
+    return result 
 
 # dec = ecb_mode_decrypt(solution)
 # print(dec[-1])
