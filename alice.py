@@ -37,7 +37,7 @@ print(f"Shared secret: {shared_secret}")
 message = "Alice ready to transmit"
 conn.sendall(message.encode())
 data = conn.recv(1024).decode()
-print(data) 
+#print(data) 
 
 
 #while(1):
@@ -47,7 +47,7 @@ import pickle
 
 solution = user_encrypt("Lets Go!Wooojooooooooooo",str(shared_secret))
 # conn.sendall(solution)
-conn.sendall(pickle.dumps(solution.res))
+conn.sendall(pickle.dumps(solution))
 # data = conn.recv(1024).decode()
 # print(data) 
 

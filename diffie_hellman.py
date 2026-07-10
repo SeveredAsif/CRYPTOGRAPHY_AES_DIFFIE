@@ -118,7 +118,7 @@ def diffie_choose_pgA():
 
     q = random.randint(2**126,2**127-1)
     p = 2 * q + 1
-    while(not isPrime(p,4)):
+    while(not (isPrime(p,4) and isPrime(q,4))):
         q = random.randint(2**126,2**127-1)
         p = 2 * q + 1
     print(p)

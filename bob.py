@@ -27,7 +27,7 @@ print(f"Shared secret: {shared_secret}")
 
 
 data = client.recv(1024).decode()
-print(data)
+#print(data)
 message = "Bob ready to transmit too"
 client.sendall(message.encode())
  
@@ -40,6 +40,6 @@ solution = pickle.loads(data)
 # solution = client.recv(1024)
 plain_text = user_decrypt(solution,str(shared_secret))
 
-print(plain_text)
+#print(plain_text)
 
 client.close()
