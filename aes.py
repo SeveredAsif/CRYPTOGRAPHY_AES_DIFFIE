@@ -369,7 +369,7 @@ def ecb_mode_encrypt(text,key):
         key0 = key0[0:16]
         #print(len(key0))
     if(len(key0)<16):
-        key0 = key0.ljust(16, '0')
+        key0 = key0 + ['0x00'] * (16 - len(key0))
     #print(key0)
     start_time = time.perf_counter()
     #keyScheduler = KeyScheduler(key)
@@ -415,19 +415,20 @@ def ecb_mode_encrypt(text,key):
 
 
 def ecb_mode_decrypt(solution,key0):
-    enc = solution.res
+    enc = solution
     # bytes_to_remove = convert_hex_string_to_decimal(enc[-1][-1])
     # for i in range(len(enc[-1])-1,len(enc[-1])-bytes_to_remove-1,-1):
+    key0 = translate_into_hex(key0)
     if(len(key0)>16): #truncating key 
         key0 = key0[0:16]
         #print(len(key0))
     if(len(key0)<16):
-        key0 = key0.ljust(16, '0')
+        key0 = key0 + ['0x00'] * (16 - len(key0))
     keyScheduler = KeyScheduler(key0)
     #print(f"enc is: {enc}!!!")
     old_enc = enc.copy()
     decrypted_text = [] 
-    round = len(solution.res)
+    round = len(solution)
     index = 0
     #print(f"enc len: {len(enc)}")
     for i in range(round-1,-1,-1):
@@ -547,7 +548,7 @@ def user_encrypt(text,key):
     solution = Solution(1,2)
     start_time = time.perf_counter()
     #key = "BUET CSE20 Batch"
-    solution = cbc_mode_encrypt(text,key)
+    solution = ecb_mode_encrypt(text,key)
     end_time = time.perf_counter()
     execution_time = end_time - start_time
     print(f"The encryption took {execution_time:.6f} seconds to execute.")
@@ -563,7 +564,7 @@ def user_encrypt(text,key):
 
 def user_decrypt(solution,key):
     start_time = time.perf_counter()
-    dec = cbc_mode_decrypt(solution,key)
+    dec = ecb_mode_decrypt(solution,key)
     end_time = time.perf_counter()
     execution_time = end_time - start_time
     print(f"The decryption took {execution_time:.6f} seconds to execute.")
