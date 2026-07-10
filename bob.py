@@ -27,18 +27,20 @@ print(f"Shared secret: {shared_secret}")
 
 
 data = client.recv(1024).decode()
-#print(data)
+print(data) #Alice ready print
 message = "Bob ready to transmit too"
 client.sendall(message.encode())
  
 from aes import user_decrypt
 import pickle
+import hashlib
 
 data = client.recv(100000)
-
+#print(data)
 solution = pickle.loads(data)
 # solution = client.recv(1024)
-plain_text = user_decrypt(solution,str(shared_secret))
+print(f"bob key: {hashlib.sha256(str(shared_secret).encode()).digest()}")
+plain_text = user_decrypt(solution,hashlib.sha256(str(shared_secret).encode()).digest())
 
 #print(plain_text)
 

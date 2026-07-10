@@ -37,15 +37,17 @@ print(f"Shared secret: {shared_secret}")
 message = "Alice ready to transmit"
 conn.sendall(message.encode())
 data = conn.recv(1024).decode()
-#print(data) 
+print(data) #Bob ready print
 
 
 #while(1):
     
 from aes import user_encrypt
 import pickle
+import hashlib
 
-solution = user_encrypt("Lets Go!Wooojooooooooooo",str(shared_secret))
+print(f"alice key: {hashlib.sha256(str(shared_secret).encode()).digest()}")
+solution = user_encrypt("Lets Go!Time for picnic" ,hashlib.sha256(str(shared_secret).encode()).digest())
 # conn.sendall(solution)
 conn.sendall(pickle.dumps(solution))
 # data = conn.recv(1024).decode()

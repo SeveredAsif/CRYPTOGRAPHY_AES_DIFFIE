@@ -196,12 +196,15 @@ def g(key_list):
 def translate_into_hex(text):
     number = []
     if(isinstance(text,int)):
+        #print("key is integer")
         return (hex(text))
     for i in text:
         #print(hex(ord(i))) 
         if( isinstance(i,str)):
+            #print("each one in key is a letter,doing hex()")
             number.append(hex(ord(i)))
         else:
+            #print(f"key is not int nor string, it is bytes probably, example:{i}, and after hex: {hex(i)}")
             number.append(hex((i)))
     return number   
 
@@ -650,7 +653,7 @@ def user_decrypt(solution, key, mode="CBC"):
     end_time = time.perf_counter()
     dec_time = (end_time - start_time) * 1000 
     
-    # Format the 'Before Unpadding' string
+    
     dec_hex_before = format_list_of_hex_to_string(dec)
     dec_ascii_before = "".join([hex_to_ascii(texts) for texts in dec])
     
@@ -683,8 +686,8 @@ def user_decrypt(solution, key, mode="CBC"):
     
     return dec_ascii_after
 
-# enc = user_encrypt("Once upon a time, a humming bird","Bhaat")
-# print(user_decrypt(enc,"Bhaat"))
+# enc = user_encrypt("Hello World, Are you okay?","Cryptography")
+# print(user_decrypt(enc,"Cryptography"))
 
 # dec = ecb_mode_decrypt(solution)
 # print(dec[-1])
